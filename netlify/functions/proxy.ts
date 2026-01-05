@@ -1,18 +1,5 @@
 import { Context } from "@netlify/edge-functions";
 
-const pickHeaders = (headers: Headers, keys: (string | RegExp)[]): Headers => {
-  const picked = new Headers();
-  for (const key of headers.keys()) {
-    if (keys.some((k) => (typeof k === "string" ? k === key : k.test(key)))) {
-      const value = headers.get(key);
-      if (typeof value === "string") {
-        picked.set(key, value);
-      }
-    }
-  }
-  return picked;
-};
-
 const CORS_HEADERS: Record<string, string> = {
   "access-control-allow-origin": "*",
   "access-control-allow-methods": "*",
@@ -22,6 +9,47 @@ const CORS_HEADERS: Record<string, string> = {
 const REQUEST_TIMEOUT = 20000;
 const MAX_RETRIES = 2;
 const RETRY_DELAY = 1000;
+
+const BLOCKED_HEADERS = [
+  "cookie",
+  "set-cookie",
+  "host",
+  "referer",
+  "user-agent",
+  "x-forwarded-for",
+  "x-real-ip",
+  "x-forwarded-host",
+  "x-forwarded-proto"
+];
+
+const pickHeaders = (headers: Headers, blockedKeys: string[]): Headers => {
+  const picked = new Headers();
+  for (const key of headers.keys()) {
+    const lowerKey = key.toLowerCase();
+    if (!blockedKeys.includes(lowerKey)) {
+      const value = headers.get(key);
+      if (typeof value === "string") {
+        picked.set(key, value);
+      }
+    }
+  }
+  return picked;
+};
+
+const addProxyHeaders = (headers: Headers, request: Request): void => {
+  headers.set("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+  headers.set("accept", "application/json, text/plain, */*");
+  headers.set("accept-language", "en-US,en;q=0.9");
+  headers.set("accept-encoding", "gzip, deflate, br");
+  headers.set("cache-control", "no-cache");
+  headers.set("pragma", "no-cache");
+  headers.set("sec-ch-ua", '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"');
+  headers.set("sec-ch-ua-mobile", "?0");
+  headers.set("sec-ch-ua-platform", '"Windows"');
+  headers.set("sec-fetch-dest", "empty");
+  headers.set("sec-fetch-mode", "cors");
+  headers.set("sec-fetch-site", "cross-site");
+};
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -74,7 +102,8 @@ export default async (request: Request, context: Context) => {
   searchParams.delete("_path");
   searchParams.forEach((value, key) => url.searchParams.append(key, value));
 
-  const headers = pickHeaders(request.headers, ["content-type", "authorization", "x-goog-api-client", "x-goog-api-key", "accept-encoding"]);
+  const headers = pickHeaders(request.headers, BLOCKED_HEADERS);
+  addProxyHeaders(headers, request);
 
   try {
     const response = await fetchWithRetry(url, {
