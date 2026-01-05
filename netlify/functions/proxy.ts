@@ -60,7 +60,9 @@ const fetchWithTimeout = async (url: URL, options: RequestInit, timeout: number)
   try {
     const response = await fetch(url.toString(), {
       ...options,
-      signal: controller.signal
+      signal: controller.signal,
+      //@ts-ignore
+      duplex: "half",// netlify need half duplex
     });
     clearTimeout(timeoutId);
     return response;
@@ -109,7 +111,7 @@ export default async (request: Request, context: Context) => {
     const response = await fetchWithRetry(url, {
       body: request.body,
       method: request.method,
-      headers
+      headers,
     });
 
     const responseHeaders = {
