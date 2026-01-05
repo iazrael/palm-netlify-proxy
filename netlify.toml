@@ -5,6 +5,15 @@
     Access-Control-Allow-Headers = "*"
     Access-Control-Allow-Methods = "*"
 [[redirects]]
+  from = "/"
+  to = "/index.html"
+  status = 200
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/proxy/:splat"
+  status = 200
+  force = true
+[[redirects]]
   from = "/*"
   to = "/.netlify/functions/proxy"
   status = 200
