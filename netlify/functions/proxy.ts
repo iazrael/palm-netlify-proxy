@@ -77,7 +77,3 @@ export default async (request: Request, context: Context) => {
     );
   }
 };
-
-export const config = {
-  path: "/*",
-};
