@@ -43,12 +43,6 @@ const addProxyHeaders = (headers: Headers, request: Request): void => {
   headers.set("accept-encoding", "gzip, deflate, br");
   headers.set("cache-control", "no-cache");
   headers.set("pragma", "no-cache");
-  headers.set("sec-ch-ua", '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"');
-  headers.set("sec-ch-ua-mobile", "?0");
-  headers.set("sec-ch-ua-platform", '"Windows"');
-  headers.set("sec-fetch-dest", "empty");
-  headers.set("sec-fetch-mode", "cors");
-  headers.set("sec-fetch-site", "cross-site");
 };
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -80,6 +74,7 @@ const fetchWithRetry = async (url: URL, options: RequestInit, retries: number = 
       return await fetchWithTimeout(url, options, REQUEST_TIMEOUT);
     } catch (error) {
       lastError = error as Error;
+      console.error(`Attempt ${attempt + 1} failed:`, error);
       
       if (attempt < retries) {
         await sleep(RETRY_DELAY * (attempt + 1));
